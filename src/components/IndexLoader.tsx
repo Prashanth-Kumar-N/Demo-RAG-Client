@@ -1,11 +1,15 @@
-// IndexLoader.jsx
+// IndexLoader.tsx
 // Full-screen cinematic loading experience shown while the RAG index is being loaded from disk.
 // Features: animated radar sweep, grid topography, status messages cycling, progress bar.
 
 import { useEffect, useState, useRef } from 'react';
 import RAGLogo from './RAGLogo';
 
-const STATUS_MESSAGES = [
+interface IndexLoaderProps {
+  onLoaded?: () => void;
+}
+
+const STATUS_MESSAGES: string[] = [
   'Establishing secure connection...',
   'Retrieving vector store from disk...',
   'Deserializing index embeddings...',
@@ -17,13 +21,13 @@ const STATUS_MESSAGES = [
   'System ready — finalising...',
 ];
 
-const IndexLoader = ({ onLoaded }) => {
-  const [messageIdx, setMessageIdx] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [fadeOut, setFadeOut] = useState(false);
-  const canvasRef = useRef(null);
-  const animFrameRef = useRef(null);
-  const angleRef = useRef(0);
+const IndexLoader = ({ onLoaded }: IndexLoaderProps) => {
+  const [messageIdx, setMessageIdx] = useState<number>(0);
+  const [progress, setProgress] = useState<number>(0);
+  const [fadeOut, setFadeOut] = useState<boolean>(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const angleRef = useRef<number>(0);
 
   // Cycle through status messages
   useEffect(() => {
@@ -48,7 +52,7 @@ const IndexLoader = ({ onLoaded }) => {
         const increment = prev < 85 ? Math.random() * 4 + 2 : Math.random() * 0.8 + 0.2;
         return Math.min(prev + increment, 100);
       });
-    }, 120);
+    }, 100);
     return () => clearInterval(interval);
   }, []);
 
@@ -57,6 +61,7 @@ const IndexLoader = ({ onLoaded }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const W = canvas.width;
     const H = canvas.height;
     const cx = W / 2;
@@ -99,9 +104,6 @@ const IndexLoader = ({ onLoaded }) => {
       // Sweep gradient (trailing glow)
       const sweepAngle = angleRef.current;
       const trailLength = Math.PI * 0.6;
-      const grad = ctx.createConicalGradient
-        ? null // not universally supported
-        : null;
 
       // Draw trail as multiple arcs with decreasing opacity
       for (let i = 0; i < 30; i++) {
@@ -165,8 +167,14 @@ const IndexLoader = ({ onLoaded }) => {
       animFrameRef.current = requestAnimationFrame(draw);
     };
 
-    animFrameRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animFrameRef.current);
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+    }
+    return () => {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+    };
   }, []);
 
   // When progress hits 100, trigger fade out then call onLoaded

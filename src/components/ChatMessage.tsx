@@ -1,17 +1,50 @@
-// ChatMessage.jsx
+// ChatMessage.tsx
 // Renders a single message bubble — either user query or RAG assistant response.
 // Handles animated appearance, source citations display, and response mode badge.
 
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 
-const UserIcon = () => (
+type ResponseMode = 'compact' | 'tree_summarize' | 'refine' | 'simple_summarize' | 'accumulate' | 'compact_accumulate';
+
+interface SourceNode {
+  metadata: {
+    chunk_id: string;
+    chunk_index: number;
+    chunk_size: number;
+    chunk_total: number;
+    file_name: string;
+    page_number: number;
+  };
+  rank: number;
+  response: string;
+  score: number;
+}
+
+interface Message {
+  id: string | number;
+  role: 'user' | 'assistant';
+  content: string;
+  responseMode?: ResponseMode;
+  timestamp?: string;
+  sources?: SourceNode[];
+  isStreaming?: boolean;
+  latencyMs?: number;
+}
+
+interface ChatMessageProps {
+  message: Message;
+  isLatest: boolean;
+}
+
+const UserIcon = (): ReactNode => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/>
     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
   </svg>
 );
 
-const BotIcon = () => (
+const BotIcon = (): ReactNode => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <rect x="3" y="8" width="18" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.8"/>
     <path d="M12 8V5M9 5h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
@@ -21,14 +54,14 @@ const BotIcon = () => (
   </svg>
 );
 
-const CopyIcon = () => (
+const CopyIcon = (): ReactNode => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
     <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.8"/>
     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" strokeWidth="1.8"/>
   </svg>
 );
 
-const RESPONSE_MODE_LABELS = {
+const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
   compact: 'Compact',
   tree_summarize: 'Tree Summarize',
   refine: 'Refine',
@@ -37,13 +70,13 @@ const RESPONSE_MODE_LABELS = {
   compact_accumulate: 'Compact Accumulate',
 };
 
-const ChatMessage = ({ message, isLatest }) => {
+const ChatMessage = ({ message, isLatest }: ChatMessageProps) => {
   const { role, content, responseMode, timestamp, sources, isStreaming } = message;
   const isUser = role === 'user';
-  const [visible, setVisible] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [displayedText, setDisplayedText] = useState(isUser ? content : '');
-  const streamIdx = useRef(0);
+  const [visible, setVisible] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
+  const [displayedText, setDisplayedText] = useState<string>(isUser ? content : '');
+  const streamIdx = useRef<number>(0);
 
   // Fade-in on mount
   useEffect(() => {
@@ -237,7 +270,7 @@ const ChatMessage = ({ message, isLatest }) => {
                   fontWeight: 500,
                 }}
               >
-                {src}
+                {src.metadata.file_name} - (Page {src.metadata.page_number})
               </span>
             ))}
           </div>

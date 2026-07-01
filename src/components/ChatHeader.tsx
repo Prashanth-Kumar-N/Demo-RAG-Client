@@ -1,9 +1,22 @@
-// ChatHeader.jsx
+// ChatHeader.tsx
 // App header with logo, system status badge, and optional metadata.
 
+import type { ReactNode } from 'react';
 import RAGLogo from './RAGLogo';
 
-const StatusDot = ({ status }) => {
+type StatusType = 'ready' | 'loading' | 'error';
+
+interface StatusDotProps {
+  status: StatusType;
+}
+
+interface ChatHeaderProps {
+  indexStatus?: StatusType;
+  messageCount?: number;
+  onReset?: (() => void) | null;
+}
+
+const StatusDot = ({ status }: StatusDotProps): ReactNode => {
   const colors = {
     ready: '#22c55e',
     loading: '#eab308',
@@ -47,28 +60,11 @@ const StatusDot = ({ status }) => {
   );
 };
 
-const InfoIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8"/>
-    <path d="M12 11v5M12 8v.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const ChatHeader = ({ indexStatus = 'loading', messageCount = 0, onReset }) => {
+const ChatHeader = ({ indexStatus = 'loading', messageCount = 0, onReset }: ChatHeaderProps) => {
   return (
-    <header
+    <header className="flex items-center justify-between px-6 h-14 bg-white border-b border-gray-200 sticky top-0 z-50"
       style={{
-        height: 58,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 1.5rem',
-        background: 'rgba(254,252,249,0.9)',
         backdropFilter: 'blur(8px)',
-        borderBottom: '1px solid rgba(196,114,0,0.1)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
         flexShrink: 0,
         fontFamily: "'Söhne', 'Inter', system-ui, sans-serif",
       }}

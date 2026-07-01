@@ -1,13 +1,50 @@
-// ragApi.js
+// ragApi.ts
 // API service layer for the LogiSense RAG application.
 // Replace the dummy implementations with real axios calls to your LlamaIndex backend.
 
 import axios from 'axios';
+import type { AxiosInstance } from 'axios';
+
+type ResponseMode = 'compact' | 'tree_summarize' | 'refine' | 'simple_summarize' | 'accumulate' | 'compact_accumulate';
+
+interface SourceNode {
+  metadata: {
+    chunk_id: string;
+    chunk_index: number;
+    chunk_size: number;
+    chunk_total: number;
+    file_name: string;
+    page_number: number;
+  };
+  rank: number;
+  response: string;
+  score: number;
+}
+
+interface DummyResponse {
+  answer: string;
+  sources: SourceNode[];
+}
+
+interface DummyResponseMap {
+  [key: string]: DummyResponse[];
+}
+
+interface LoadIndexResponse {
+  status: string;
+  message: string;
+}
+
+interface QueryResponse {
+  response_text: string;
+  source_nodes: SourceNode[];
+  latencyMs: number;
+}
 
 // Base URL — change this to your backend
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const BASE_URL = 'https://fluffy-space-sniffle-vw764jxggw7hwrq5-8001.app.github.dev';
 
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
@@ -15,7 +52,7 @@ const api = axios.create({
 
 // ─── Dummy response data ──────────────────────────────────────────────────────
 
-const DUMMY_RESPONSES = {
+/* const DUMMY_RESPONSES: DummyResponseMap = {
   compact: [
     {
       answer: 'Forklifts must be operated only by certified personnel. Key safety requirements include: pre-operation inspection (tyres, brakes, fluid levels, horn), maximum load limits posted on the nameplate, mandatory seatbelt use, and a maximum speed of 8 km/h in warehouse aisles.',
@@ -62,10 +99,10 @@ const DUMMY_RESPONSES = {
   ],
 };
 
-function getDummyResponse(responseMode) {
+function getDummyResponse(responseMode: ResponseMode): DummyResponse {
   const pool = DUMMY_RESPONSES[responseMode] || DUMMY_RESPONSES.compact;
   return pool[Math.floor(Math.random() * pool.length)];
-}
+} */
 
 // ─── API Methods ──────────────────────────────────────────────────────────────
 
@@ -73,14 +110,14 @@ function getDummyResponse(responseMode) {
  * loadIndex — Called on app launch to retrieve and cache the vector index.
  * Replace with your real LlamaIndex endpoint.
  */
-export async function loadIndex() {
-  // REAL implementation:
-  // const response = await api.post('/api/index/load');
-  // return response.data;
-
-  // DUMMY — simulates ~2.5s load time
-  await new Promise((resolve) => setTimeout(resolve, 2500));
-  return { status: 'ok', message: 'Index loaded successfully', documentCount: 47, vectorDimensions: 1536 };
+export async function loadIndex(): Promise<LoadIndexResponse> {
+  
+  const response = await axios.get(`${BASE_URL}/build_index`); 
+  if(response.status === 200) {
+    return { status: 'ok', message: 'Index loaded successfully' };
+  } else {
+    return {status: 'error', message: response.data.message || "Cannot Load index at the moment."}
+  }
 }
 
 /**
@@ -89,23 +126,13 @@ export async function loadIndex() {
  *
  * @param {string} query - The user's natural language query
  * @param {string} responseMode - LlamaIndex ResponseMode enum value
- * @returns {{ answer: string, sources: string[], latencyMs: number }}
+ * @returns {{ answer: string, sources: SourceNode[], latencyMs: number }}
  */
-export async function queryRAG(query, responseMode = 'compact') {
+export async function queryRAG(_query: string, responseMode: ResponseMode = 'compact'): Promise<QueryResponse> {
   // REAL implementation:
-  // const response = await api.post('/api/query', { query, response_mode: responseMode });
-  // return response.data;
-
-  // DUMMY — simulates 0.8–2.2s latency
-  const latency = 800 + Math.random() * 1400;
-  await new Promise((resolve) => setTimeout(resolve, latency));
-
-  const dummy = getDummyResponse(responseMode);
-  return {
-    answer: dummy.answer,
-    sources: dummy.sources,
-    latencyMs: Math.round(latency),
-  };
+  const response = await axios.post(`${BASE_URL}/get_response`, {query: _query, response_mode: responseMode}); 
+  console.log(response.data);
+  return response.data;
 }
 
 export default api;

@@ -1,37 +1,72 @@
-// RAGChat.jsx
+// RAGChat.tsx
 // Main orchestrator component. Manages app state: index loading, message history,
 // query submission, and wires together all sub-components.
 
 import { useState, useCallback, useEffect } from 'react';
-import IndexLoader from './IndexLoader';
-import ChatHeader from './ChatHeader';
-import ChatPane from './ChatPane';
-import ChatInput from './ChatInput';
-import ToastManager, { toast } from './ToastManager';
-import { loadIndex, queryRAG } from './ragApi';
+import type { ReactNode } from 'react';
+import IndexLoader from './components/IndexLoader';
+import ChatHeader from './components/ChatHeader';
+import ChatPane from './components/ChatPane';
+import ChatInput from './components/ChatInput';
+import ToastManager, { toast } from './components/ToastManager';
+import { loadIndex, queryRAG } from './components/ragApi';
 
-const formatTime = () => {
+type IndexStatus = 'loading' | 'ready' | 'error';
+type ResponseMode = 'compact' | 'tree_summarize' | 'refine' | 'simple_summarize' | 'accumulate' | 'compact_accumulate';
+
+interface SourceNode {
+  metadata: {
+    chunk_id: string;
+    chunk_index: number;
+    chunk_size: number;
+    chunk_total: number;
+    file_name: string;
+    page_number: number;
+  };
+  rank: number;
+  response: string;
+  score: number;
+}
+
+interface Message {
+  id: string | number;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  responseMode?: ResponseMode;
+  sources?: SourceNode[];
+  isStreaming?: boolean;
+  latencyMs?: number;
+}
+
+const formatTime = (): string => {
   const now = new Date();
   return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const RAGChat = () => {
-  const [indexStatus, setIndexStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
-  const [showLoader, setShowLoader] = useState(true);
-  const [messages, setMessages] = useState([]);
-  const [isQuerying, setIsQuerying] = useState(false);
+const App = (): ReactNode => {
+  const [indexStatus, setIndexStatus] = useState<IndexStatus>('loading');
+  const [showLoader, setShowLoader] = useState<boolean>(true);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isQuerying, setIsQuerying] = useState<boolean>(false);
 
   // ── Load index on mount ──────────────────────────────────────────────────
   useEffect(() => {
     loadIndex()
       .then((result) => {
-        setIndexStatus('ready');
-        setTimeout(() => {
-          toast.success(
-            `Index loaded — ${result.documentCount} documents, ${result.vectorDimensions}-dim vectors ready.`,
-            { title: 'System Ready' }
-          );
-        }, 1400);
+        if (result.status === 'ok') {
+          setIndexStatus('ready');
+          setTimeout(() => {
+            toast.success(
+              `Index loaded`,
+              { title: 'System Ready' }
+            );
+          }, 1000);
+        } else {
+          // throw an error her with message that the catch block catches
+          throw new Error(result.message || 'Index load failed');
+        }
+
       })
       .catch((err) => {
         console.error('Index load failed:', err);
@@ -52,10 +87,10 @@ const RAGChat = () => {
 
   // ── Submit a query ────────────────────────────────────────────────────────
   const handleSend = useCallback(
-    async (queryText, responseMode) => {
+    async (queryText: string, responseMode: ResponseMode) => {
       if (isQuerying || indexStatus !== 'ready') return;
 
-      const userMsg = {
+      const userMsg: Message = {
         id: Date.now(),
         role: 'user',
         content: queryText,
@@ -68,12 +103,12 @@ const RAGChat = () => {
       try {
         const result = await queryRAG(queryText, responseMode);
 
-        const assistantMsg = {
+        const assistantMsg: Message = {
           id: Date.now() + 1,
           role: 'assistant',
-          content: result.answer,
+          content: result.response_text,
           responseMode,
-          sources: result.sources || [],
+          sources: result.source_nodes || [],
           timestamp: formatTime(),
           latencyMs: result.latencyMs,
         };
@@ -116,21 +151,16 @@ const RAGChat = () => {
 
   return (
     <>
-      <style>{GLOBAL_STYLES}</style>
       <ToastManager />
 
       {showLoader && (
         <IndexLoader onLoaded={handleLoaderFinished} />
       )}
 
-      <div
+      <div className="flex flex-col h-screen overflow-hidden"
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
           background: 'linear-gradient(160deg, #F7F3EE 0%, #F2EBE1 60%, #EFE8DF 100%)',
           fontFamily: "'Söhne', 'Inter', system-ui, sans-serif",
-          overflow: 'hidden',
         }}
       >
         <ChatHeader
@@ -151,61 +181,6 @@ const RAGChat = () => {
   );
 };
 
-const GLOBAL_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-  *, *::before, *::after { box-sizing: border-box; }
 
-  html, body, #root {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    font-family: 'Söhne', 'Inter', system-ui, -apple-system, sans-serif;
-  }
-
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(196, 114, 0, 0.2);
-    border-radius: 99px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(196, 114, 0, 0.38);
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-  @keyframes bounce {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.45; }
-    40% { transform: translateY(-5px); opacity: 1; }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.5; transform: scale(0.85); }
-  }
-  @keyframes dropUp {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  textarea::placeholder {
-    color: #B0BECC;
-    font-style: italic;
-  }
-
-  button:focus-visible {
-    outline: 2px solid rgba(196, 114, 0, 0.5);
-    outline-offset: 2px;
-  }
-`;
-
-export default RAGChat;
+export default App;

@@ -1,7 +1,14 @@
-// RAGLogo.jsx
+// RAGLogo.tsx
 // Shield + warehouse grid logo for the defence/logistics RAG application
 
-const RAGLogo = ({ size = 36, showText = true }) => {
+import type { ReactNode } from 'react';
+
+interface RAGLogoProps {
+  size?: number;
+  showText?: boolean;
+}
+
+const RAGLogo = ({ size = 36, showText = true }: RAGLogoProps): ReactNode => {
   return (
     <div className="flex items-center gap-3">
       {/* SVG Logo Mark */}

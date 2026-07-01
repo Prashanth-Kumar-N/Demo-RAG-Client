@@ -1,13 +1,42 @@
-// ToastManager.jsx
+// ToastManager.tsx
 // Provides a global toast notification system.
 // Usage: import { useToast } from './ToastManager' — call toast.show({ type, message })
 // Also export the ToastContainer to place at the app root.
 
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import type { ReactNode, Context } from 'react';
 
-const ToastContext = createContext(null);
+type ToastType = 'success' | 'error' | 'warning' | 'info';
 
-const ICONS = {
+interface ToastItem {
+  id: number;
+  type: ToastType;
+  title?: string;
+  message: string;
+  duration?: number;
+}
+
+interface ToastContextType {
+  show: (opts: Partial<ToastItem>) => void;
+  success: (message: string, opts?: Partial<ToastItem>) => void;
+  error: (message: string, opts?: Partial<ToastItem>) => void;
+  warning: (message: string, opts?: Partial<ToastItem>) => void;
+  info: (message: string, opts?: Partial<ToastItem>) => void;
+}
+
+interface ToastProps {
+  toast: ToastItem;
+  onDismiss: (id: number) => void;
+}
+
+interface AccentColorConfig {
+  left: string;
+  bg: string;
+}
+
+const ToastContext: Context<ToastContextType | null> = createContext<ToastContextType | null>(null);
+
+const ICONS: Record<ToastType, ReactNode> = {
   success: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="9" fill="rgba(34,197,94,0.15)" stroke="#22c55e" strokeWidth="1.8"/>
@@ -34,16 +63,16 @@ const ICONS = {
   ),
 };
 
-const ACCENT_COLORS = {
+const ACCENT_COLORS: Record<ToastType, AccentColorConfig> = {
   success: { left: '#22c55e', bg: 'rgba(34,197,94,0.05)' },
   error: { left: '#ef4444', bg: 'rgba(239,68,68,0.05)' },
   warning: { left: '#eab308', bg: 'rgba(234,179,8,0.05)' },
   info: { left: '#C47200', bg: 'rgba(196,114,0,0.05)' },
 };
 
-const Toast = ({ toast, onDismiss }) => {
-  const [visible, setVisible] = useState(false);
-  const [leaving, setLeaving] = useState(false);
+const Toast = ({ toast, onDismiss }: ToastProps): ReactNode => {
+  const [visible, setVisible] = useState<boolean>(false);
+  const [leaving, setLeaving] = useState<boolean>(false);
   const accent = ACCENT_COLORS[toast.type] || ACCENT_COLORS.info;
 
   useEffect(() => {
@@ -129,17 +158,17 @@ const Toast = ({ toast, onDismiss }) => {
   );
 };
 
-let _showToast = null;
+let _showToast: ((opts: Partial<ToastItem>) => void) | null = null;
 
-export const ToastContainer = () => {
-  const [toasts, setToasts] = useState([]);
+export const ToastContainer = (): ReactNode => {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const show = useCallback(({ type = 'info', title, message, duration }) => {
+  const show = useCallback(({ type = 'info', title, message, duration }: Partial<ToastItem>) => {
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, type, title, message, duration }]);
+    setToasts((prev) => [...prev, { id, type: type as ToastType, title, message: message || '', duration }]);
   }, []);
 
-  const dismiss = useCallback((id) => {
+  const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
@@ -171,16 +200,22 @@ export const ToastContainer = () => {
 };
 
 // Global toast function — call anywhere after ToastContainer is mounted
-export const toast = {
-  show: (opts) => _showToast?.(opts),
-  success: (message, opts = {}) => _showToast?.({ type: 'success', message, ...opts }),
-  error: (message, opts = {}) => _showToast?.({ type: 'error', message, ...opts }),
-  warning: (message, opts = {}) => _showToast?.({ type: 'warning', message, ...opts }),
-  info: (message, opts = {}) => _showToast?.({ type: 'info', message, ...opts }),
+export const toast: {
+  show: (opts: Partial<ToastItem>) => void;
+  success: (message: string, opts?: Partial<ToastItem>) => void;
+  error: (message: string, opts?: Partial<ToastItem>) => void;
+  warning: (message: string, opts?: Partial<ToastItem>) => void;
+  info: (message: string, opts?: Partial<ToastItem>) => void;
+} = {
+  show: (opts: Partial<ToastItem>) => _showToast?.(opts),
+  success: (message: string, opts: Partial<ToastItem> = {}) => _showToast?.({ type: 'success', message, ...opts }),
+  error: (message: string, opts: Partial<ToastItem> = {}) => _showToast?.({ type: 'error', message, ...opts }),
+  warning: (message: string, opts: Partial<ToastItem> = {}) => _showToast?.({ type: 'warning', message, ...opts }),
+  info: (message: string, opts: Partial<ToastItem> = {}) => _showToast?.({ type: 'info', message, ...opts }),
 };
 
 // Hook version
-export const useToast = () => {
+export const useToast = (): typeof toast => {
   const ctx = useContext(ToastContext);
   return ctx || toast;
 };

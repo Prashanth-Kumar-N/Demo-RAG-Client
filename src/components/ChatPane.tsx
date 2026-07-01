@@ -1,10 +1,43 @@
-// ChatPane.jsx
+// ChatPane.tsx
 // Scrollable message history pane. Handles auto-scroll, empty state, and typing indicator.
 
 import { useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import ChatMessage from './ChatMessage';
 
-const EmptyState = () => (
+type ResponseMode = 'compact' | 'tree_summarize' | 'refine' | 'simple_summarize' | 'accumulate' | 'compact_accumulate';
+
+interface SourceNode {
+  metadata: {
+    chunk_id: string;
+    chunk_index: number;
+    chunk_size: number;
+    chunk_total: number;
+    file_name: string;
+    page_number: number;
+  };
+  rank: number;
+  response: string;
+  score: number;
+}
+
+interface Message {
+  id: string | number;
+  role: 'user' | 'assistant';
+  content: string;
+  responseMode?: ResponseMode;
+  timestamp?: string;
+  sources?: SourceNode[];
+  isStreaming?: boolean;
+  latencyMs?: number;
+}
+
+interface ChatPaneProps {
+  messages: Message[];
+  isLoading: boolean;
+}
+
+const EmptyState = (): ReactNode => (
   <div style={{
     flex: 1,
     display: 'flex',
@@ -29,8 +62,8 @@ const EmptyState = () => (
     }}>
       <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
         <path d="M24 6L6 14V26C6 35.4 14.1 43.2 24 46C33.9 43.2 42 35.4 42 26V14L24 6Z"
-          stroke="#C47200" strokeWidth="2" strokeLinejoin="round" fill="rgba(196,114,0,0.08)"/>
-        <path d="M16 28l5 5 11-11" stroke="#C47200" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          stroke="#C47200" strokeWidth="2" strokeLinejoin="round" fill="rgba(196,114,0,0.08)" />
+        <path d="M16 28l5 5 11-11" stroke="#C47200" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
 
@@ -43,7 +76,7 @@ const EmptyState = () => (
     }}>
       Ready to assist
     </h3>
-    <p style={{
+    {/* <p style={{
       margin: '0 0 1.5rem',
       fontSize: '0.85rem',
       color: '#6B7B8D',
@@ -51,7 +84,7 @@ const EmptyState = () => (
       lineHeight: 1.6,
     }}>
       Ask anything about warehouse operations, safety procedures, or defence vehicle specifications.
-    </p>
+    </p> */}
 
     {/* Suggestion chips */}
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', maxWidth: 500 }}>
@@ -83,7 +116,7 @@ const EmptyState = () => (
   </div>
 );
 
-const TypingIndicator = () => (
+const TypingIndicator = (): ReactNode => (
   <div style={{
     display: 'flex',
     alignItems: 'flex-start',
@@ -106,10 +139,10 @@ const TypingIndicator = () => (
       boxShadow: '0 2px 8px rgba(196,114,0,0.25)',
     }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="8" width="18" height="12" rx="2.5" stroke="#fff" strokeWidth="1.8"/>
-        <path d="M12 8V5M9 5h6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
-        <circle cx="8.5" cy="14" r="1.5" fill="#fff" opacity="0.8"/>
-        <circle cx="15.5" cy="14" r="1.5" fill="#fff" opacity="0.8"/>
+        <rect x="3" y="8" width="18" height="12" rx="2.5" stroke="#fff" strokeWidth="1.8" />
+        <path d="M12 8V5M9 5h6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="8.5" cy="14" r="1.5" fill="#fff" opacity="0.8" />
+        <circle cx="15.5" cy="14" r="1.5" fill="#fff" opacity="0.8" />
       </svg>
     </div>
 
@@ -139,9 +172,9 @@ const TypingIndicator = () => (
   </div>
 );
 
-const ChatPane = ({ messages, isLoading }) => {
-  const bottomRef = useRef(null);
-  const paneRef = useRef(null);
+const ChatPane = ({ messages, isLoading }: ChatPaneProps) => {
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const paneRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

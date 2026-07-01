@@ -1,10 +1,25 @@
-// ChatInput.jsx
+// ChatInput.tsx
 // The query input area with an attached action pane (response mode selector, submit button).
 // Claude.ai-style attached toolbar below the textarea.
 
 import { useState, useRef, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
-const RESPONSE_MODES = [
+type ResponseMode = 'compact' | 'tree_summarize' | 'refine' | 'simple_summarize' | 'accumulate' | 'compact_accumulate';
+
+interface ResponseModeOption {
+  value: ResponseMode;
+  label: string;
+  description: string;
+}
+
+interface ChatInputProps {
+  onSend: (query: string, responseMode: ResponseMode) => void;
+  disabled: boolean;
+  isLoading: boolean;
+}
+
+const RESPONSE_MODES: ResponseModeOption[] = [
   { value: 'compact', label: 'Compact', description: 'Compact, concise answer' },
   { value: 'tree_summarize', label: 'Tree Summarize', description: 'Hierarchical summarization' },
   { value: 'refine', label: 'Refine', description: 'Iterative answer refinement' },
@@ -13,7 +28,7 @@ const RESPONSE_MODES = [
   { value: 'compact_accumulate', label: 'Compact Accumulate', description: 'Compact + accumulate' },
 ];
 
-const SendIcon = ({ size = 16 }) => (
+const SendIcon = ({ size = 16 }: { size?: number }): ReactNode => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -33,12 +48,12 @@ const ModeIcon = () => (
   </svg>
 );
 
-const ChatInput = ({ onSend, disabled, isLoading }) => {
-  const [query, setQuery] = useState('');
-  const [responseMode, setResponseMode] = useState('compact');
-  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
-  const textareaRef = useRef(null);
-  const dropdownRef = useRef(null);
+const ChatInput = ({ onSend, disabled, isLoading }: ChatInputProps) => {
+  const [query, setQuery] = useState<string>('');
+  const [responseMode, setResponseMode] = useState<ResponseMode>('compact');
+  const [modeDropdownOpen, setModeDropdownOpen] = useState<boolean>(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -50,8 +65,8 @@ const ChatInput = ({ onSend, disabled, isLoading }) => {
 
   // Close dropdown on outside click
   useEffect(() => {
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setModeDropdownOpen(false);
       }
     };
@@ -69,7 +84,7 @@ const ChatInput = ({ onSend, disabled, isLoading }) => {
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -298,7 +313,7 @@ const ChatInput = ({ onSend, disabled, isLoading }) => {
   );
 };
 
-const LoadSpinner = () => (
+const LoadSpinner = (): ReactNode => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
       strokeDasharray="40 20" />
