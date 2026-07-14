@@ -101,7 +101,8 @@ const App = (): ReactNode => {
       setIsQuerying(true);
 
       try {
-        const result = await queryRAG(queryText, responseMode);
+        const chatHistory = getChatHistory(4);
+        const result = await queryRAG(queryText, responseMode, chatHistory);
 
         const assistantMsg: Message = {
           id: Date.now() + 1,
@@ -142,6 +143,13 @@ const App = (): ReactNode => {
     },
     [isQuerying, indexStatus]
   );
+
+  const getChatHistory = (length: number): Pick<Message, 'role' | 'content'>[] => {
+    return messages.slice(-length).map(({ role, content }) => ({
+      role,
+      content,
+    }));
+  };
 
   // ── Reset conversation ────────────────────────────────────────────────────
   const handleReset = useCallback(() => {

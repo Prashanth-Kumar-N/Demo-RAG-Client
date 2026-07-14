@@ -5,7 +5,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
-type ResponseMode = 'compact' | 'tree_summarize' | 'refine' | 'simple_summarize' | 'accumulate' | 'compact_accumulate';
+type ResponseMode = 'compact' | 'tree_summarize' | 'refine' | 'simple_summarize' | 'accumulate' ;
 
 interface ResponseModeOption {
   value: ResponseMode;
@@ -25,7 +25,6 @@ const RESPONSE_MODES: ResponseModeOption[] = [
   { value: 'refine', label: 'Refine', description: 'Iterative answer refinement' },
   { value: 'simple_summarize', label: 'Simple Summarize', description: 'Quick plain summary' },
   { value: 'accumulate', label: 'Accumulate', description: 'Combine all node responses' },
-  { value: 'compact_accumulate', label: 'Compact Accumulate', description: 'Compact + accumulate' },
 ];
 
 const SendIcon = ({ size = 16 }: { size?: number }): ReactNode => (

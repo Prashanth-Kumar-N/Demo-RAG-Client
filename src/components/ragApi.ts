@@ -111,12 +111,12 @@ function getDummyResponse(responseMode: ResponseMode): DummyResponse {
  * Replace with your real LlamaIndex endpoint.
  */
 export async function loadIndex(): Promise<LoadIndexResponse> {
-  
-  const response = await axios.get(`${BASE_URL}/build_index`); 
-  if(response.status === 200) {
+
+  const response = await axios.get(`${BASE_URL}/build_index`);
+  if (response.status === 200) {
     return { status: 'ok', message: 'Index loaded successfully' };
   } else {
-    return {status: 'error', message: response.data.message || "Cannot Load index at the moment."}
+    return { status: 'error', message: response.data.message || "Cannot Load index at the moment." }
   }
 }
 
@@ -128,9 +128,12 @@ export async function loadIndex(): Promise<LoadIndexResponse> {
  * @param {string} responseMode - LlamaIndex ResponseMode enum value
  * @returns {{ answer: string, sources: SourceNode[], latencyMs: number }}
  */
-export async function queryRAG(_query: string, responseMode: ResponseMode = 'compact'): Promise<QueryResponse> {
+export async function queryRAG(_query: string, responseMode: ResponseMode = 'compact', chatHistory: {
+  role: 'user' | 'assistant';
+  content: string;
+}[]): Promise<QueryResponse> {
   // REAL implementation:
-  const response = await axios.post(`${BASE_URL}/get_response`, {query: _query, response_mode: responseMode}); 
+  const response = await axios.post(`${BASE_URL}/get_response`, { query: _query, response_mode: responseMode, chat_history: chatHistory });
   console.log(response.data);
   return response.data;
 }

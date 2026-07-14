@@ -87,12 +87,13 @@ const EmptyState = (): ReactNode => (
     </p> */}
 
     {/* Suggestion chips */}
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', maxWidth: 500 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', maxWidth: 750 }}>
       {[
-        'What are the forklift safety protocols?',
-        'Summarise hazardous material storage guidelines',
-        'Vehicle maintenance schedule for defence trucks',
-        'Emergency evacuation procedures',
+        'What is daily walk-around inspection?',
+        'What is the visibility of striker vehicle?',
+        'To lower the platform using the auxiliary lowering switch, what should be done first?',
+        'Describe JLG Boom Lift machine',
+        'Explain the sequence of machine setup and operation of a JLG Lift'
       ].map((suggestion) => (
         <button
           key={suggestion}
